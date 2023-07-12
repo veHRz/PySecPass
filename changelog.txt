@@ -1,0 +1,19 @@
+====================================================================
+Version : 1.1.0.0
+Change:
+    - The clipboard now clears automatically only if the content
+      has not been changed.
+    - Now the clipboard is automatically deleted only when a
+      password is copied.
+    - The default language is now the system language.
+    - You can now change the size of the window and the size of
+      the value fields is updated automatically.
+    - Added a button when right clicking on an account to edit it.
+    - Added a button when right clicking on an account to delete it.
+    - Display of an error when the ID entered is not valid when
+      deleting an account.
+    - Display of an error when the ID entered is not valid when
+      modifying an account.
+    - The default language (if the program has no translation
+      for the system language) has been set to English
+====================================================================

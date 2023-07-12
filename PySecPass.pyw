@@ -7,11 +7,12 @@ from tkinter.simpledialog import askstring
 from tkinter.messagebox import showerror, showinfo, askyesnocancel
 from tkinter import *
 # Other modules
-import os, sys, time, threading
+import os, sys, time, threading, locale
 
 __db: DataBase
 __fileName: str
 __accountsList: list[list[Entry]] = []
+__accountsListTop: list[Entry] = []
 
 def __saveAndQuit(_ = None) -> None:
     __saveDataBase()
@@ -68,49 +69,56 @@ def __loadNewDataBase() -> bool:
 def __updateListAccounts():
     global __accountsList
     #__sizes = {0: 10, 1: 15, 2: 13, 3: 23, 4: 24}
-    __length = 85
-    __sizes = {0: int(__length/(80/10)), 1: int(__length/(85/15)), 2: int(__length/(85/13)), 3: int(__length/(85/23)), 4: int(__length/(85/24))}
+    __length = __root.winfo_width()
+    __sizes = {0: int(__length / 360), 1: int(__length / 74), 2: int(__length / 65), 3: int(__length / 60.5),4: int(__length / 58), 5: int(__length / 51)}
     for __x in __accountsList:
         for __y in __x:
             if hasattr(__y, 'destroy'):
                 __y.destroy()
+    for account in __accountsListTop:
+        account.destroy()
     __accountsList = [[Entry() for _ in range(len(__sizes.keys())+1)] for _ in range(len(__db.currentAccounts))]
-    Entry(__rootFrame, width=3, fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListId"], disabledbackground="white", disabledforeground="black", justify=CENTER).grid(row=0, column=0)
-    Entry(__rootFrame, width=__sizes[0], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListTitle"], disabledbackground="white", disabledforeground="black", justify=CENTER).grid(row=0, column=1)
-    Entry(__rootFrame, width=__sizes[1], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListUser"], disabledbackground="white", disabledforeground="black", justify=CENTER).grid(row=0, column=2)
-    Entry(__rootFrame, width=__sizes[2], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListPassword"], disabledbackground="white", disabledforeground="black", justify=CENTER).grid(row=0, column=3)
-    Entry(__rootFrame, width=__sizes[3], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListUrl"], disabledbackground="white", disabledforeground="black", justify=CENTER).grid(row=0, column=4)
-    Entry(__rootFrame, width=__sizes[4], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListNote"], disabledbackground="white", disabledforeground="black", justify=CENTER).grid(row=0, column=5)
+    __accountsListTop.append(Entry(__rootFrame, width=__sizes[0], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListId"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop[-1].grid(row=0, column=0)
+    __accountsListTop.append(Entry(__rootFrame, width=__sizes[1], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListTitle"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop[-1].grid(row=0, column=1)
+    __accountsListTop.append(Entry(__rootFrame, width=__sizes[2], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListUser"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop[-1].grid(row=0, column=2)
+    __accountsListTop.append(Entry(__rootFrame, width=__sizes[3], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListPassword"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop[-1].grid(row=0, column=3)
+    __accountsListTop.append(Entry(__rootFrame, width=__sizes[4], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListUrl"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop[-1].grid(row=0, column=4)
+    __accountsListTop.append(Entry(__rootFrame, width=__sizes[5], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListNote"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop[-1].grid(row=0, column=5)
     for __i in range(5):
         for __y in range(len(__db.currentAccounts)):
             __value = StringVar()
             __value.set(__db.currentAccounts[__y][__i])
             if __i == 2:
                 if __showPassword.get():
-                    __valueEntry = Entry(__rootFrame, width=__sizes[__i], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black")
+                    __valueEntry = Entry(__rootFrame, width=__sizes[__i+1], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black")
                 else :
-                    __valueEntry = Entry(__rootFrame, width=__sizes[__i], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black", show="*")
+                    __valueEntry = Entry(__rootFrame, width=__sizes[__i+1], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black", show="*")
             else:
-                __valueEntry = Entry(__rootFrame, width=__sizes[__i], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black")
+                __valueEntry = Entry(__rootFrame, width=__sizes[__i+1], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black")
             __accountsList[__y][__i+1] = __valueEntry
             __accountsList[__y][__i+1].bind("<Button-3>", __rootShowRightClickMenuLambda(__y))
             __accountsList[__y][__i+1].grid(row=__y+1, column=__i+1)
     for __i in range(len(__db.currentAccounts)):
         __id = StringVar()
         __id.set(str(__i))
-        __idEntry = Entry(__rootFrame, width=3, fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__id, disabledbackground="white", disabledforeground="black", justify=CENTER)
+        __idEntry = Entry(__rootFrame, width=__sizes[0], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__id, disabledbackground="white", disabledforeground="black", justify=CENTER)
         __accountsList[__i][0] = __idEntry
         __accountsList[__i][0].bind("<Button-3>", __rootShowRightClickMenuLambda(__i))
         __accountsList[__i][0].grid(row=__i + 1, column=0)
 
-def __clearClipboard(seconds: int):
+def __clearClipboard(seconds: int, content: str):
     time.sleep(seconds)
-    print("ok")
-    __root.clipboard_clear()
-    __root.clipboard_append("")
+    if content == __root.clipboard_get():
+        __root.clipboard_clear()
+        __root.clipboard_append("")
 
 def __cancelLastAction(_ = None) -> None:
-    print(__lastActions)
     if len(__lastActions) == 0:
         return
     __last: list[str, int, list, int] = __lastActions[-1]
@@ -145,12 +153,31 @@ def __cancelLastAction(_ = None) -> None:
     else:
         raise ValueError(f'Error : __last[0] value "{__last[0]}" is not valid.')
 
+def __getLanguage() -> str:
+    __systemLanguage, _ = locale.getlocale()
+    __systemLanguage = __systemLanguage[:2].lower()
+    if __systemLanguage in __LANGUAGES_AVAILAIBLE:
+        return __systemLanguage
+    return __DEFAULT_LANGUAGE
+
+def __verifyIfIdExist(__id: int | str) -> bool:
+    return int(__id) < len(__db.currentAccounts)
+
+def __updatedSizeChange(__event):
+    global __lastWidth
+    __currentWidth = __root.winfo_width()
+    if __currentWidth != __lastWidth:
+        __lastWidth = __currentWidth
+        __rootTopMenubuttons.config(width=__currentWidth)
+        __updateListAccounts()
+
 def __menuChoiceDBLoad() -> None:
     __result = __loadDataBase()
     if __result:
         __menuChoiceDBRoot.withdraw()
         __updateListAccounts()
         __root.deiconify()
+        __root.bind("<Configure>", __updatedSizeChange)
 
 def __menuChoiceDBNew() -> None:
     __result = __loadNewDataBase()
@@ -158,6 +185,7 @@ def __menuChoiceDBNew() -> None:
         __menuChoiceDBRoot.withdraw()
         __updateListAccounts()
         __root.deiconify()
+        __root.bind("<Configure>", __updatedSizeChange)
 
 def __menuChoiceDB() -> None:
     __menuChoiceDBWidth = "520"
@@ -249,7 +277,7 @@ def __rootButtonAddAccount(_ = None, __customValues: list=None):
     Button(__buttonAccountRootAdd, command=lambda : __addAccount(__title.get(), __username.get(), __password.get(), __url.get(), __note.get()), textvariable=__stringVars["__buttonAccountRootAddButtonVar"]).grid(row=5, column=1)
     __buttonAccountRootAdd.mainloop()
 
-def __rootButtonModifyAccount(_ = None, __customValues: list=None) -> None:
+def __rootButtonModifyAccount(_ = None, __customValues: list=None, __customId: int | None = None) -> None:
     def __modifyAccount(__id: str, __newTitle: str, __newUsername: str, __newPassword: str, __newUrl: str, __newNote: str, __lastTimeModified: int | None = None) -> None:
         global __lastModifiedTime
         if __newTitle == "":
@@ -262,6 +290,9 @@ def __rootButtonModifyAccount(_ = None, __customValues: list=None) -> None:
             __newUrl = None
         if __newNote == "":
             __newNote = None
+        if not __verifyIfIdExist(int(__id)):
+            showerror(title=__translations("showerror_id_incorrect", "title"), message=__translations("showerror_id_incorrect", "message"))
+            return
         __old = __db.getAccount(int(__id)).copy()
         __db.modifyAccount(int(__id), __newTitle, __newUsername, __newPassword, __newUrl, __newNote)
         __lastActions.append(["modify", int(__id), __old, __lastModifiedTime])
@@ -288,7 +319,12 @@ def __rootButtonModifyAccount(_ = None, __customValues: list=None) -> None:
     __entryId.focus_set()
     Label(__buttonAccountRootModify, textvariable=__stringVars["__buttonAccountRootModifyTitleVar"]).grid(row=1, column=0, sticky="w")
     __title = StringVar()
-    Entry(__buttonAccountRootModify, textvariable=__title).grid(row=1, column=1)
+    __entryTitle = Entry(__buttonAccountRootModify, textvariable=__title)
+    __entryTitle.grid(row=1, column=1)
+    if __customId is not None:
+        __id.set(str(__customId))
+        __entryId.config(state="disabled")
+        __entryTitle.focus_set()
     Label(__buttonAccountRootModify, textvariable=__stringVars["__buttonAccountRootModifyUserVar"]).grid(row=2, column=0, sticky="w")
     __username = StringVar()
     Entry(__buttonAccountRootModify, textvariable=__username).grid(row=2, column=1)
@@ -304,9 +340,12 @@ def __rootButtonModifyAccount(_ = None, __customValues: list=None) -> None:
     Button(__buttonAccountRootModify, command=lambda: __modifyAccount(__id.get(), __title.get(), __username.get(), __password.get(), __url.get(), __note.get()), textvariable=__stringVars["__buttonAccountRootModifyButtonVar"]).grid(row=6, column=1)
     __buttonAccountRootModify.mainloop()
 
-def __rootButtonRemoveAccount(_ = None, __customRemove: list | None = None) -> None:
+def __rootButtonRemoveAccount(_ = None, __customRemove: list | None = None, __customId: int | None = None) -> None:
     def __removeAccount(__number: str, __lastTimeModified: int | None = None):
         global __lastModifiedTime
+        if not __verifyIfIdExist(int(__number)):
+            showerror(title=__translations("showerror_id_incorrect", "title"), message=__translations("showerror_id_incorrect", "message"))
+            return
         __old = __db.getAccount(int(__number))
         __db.removeAccount(int(__number))
         __lastActions.append(["remove", int(__number), __old, __lastModifiedTime])
@@ -331,7 +370,12 @@ def __rootButtonRemoveAccount(_ = None, __customRemove: list | None = None) -> N
     __entryId = Entry(__buttonAccountRootRemove, textvariable=__number)
     __entryId.grid(row=2, column=0)
     __entryId.focus_set()
-    Button(__buttonAccountRootRemove, command=lambda: __removeAccount(__number.get()), textvariable=__stringVars["__buttonAccountRootRemoveButtonVar"]).grid(row=3, column=0)
+    __button = Button(__buttonAccountRootRemove, command=lambda: __removeAccount(__number.get()), textvariable=__stringVars["__buttonAccountRootRemoveButtonVar"])
+    __button.grid(row=3, column=0)
+    if __customId is not None:
+        __number.set(str(__customId))
+        __entryId.config(state="disabled")
+        __button.focus_set()
     __buttonAccountRootRemove.mainloop()
 
 def __rootButtonLanguage(language: str = "en"):
@@ -352,6 +396,9 @@ def __rootShowRightClickMenu(__id: int, __event):
     __rootRightClickMenu.add_command(label=__translations("__rootRigthClickMenu", "password"), command=lambda : __rootShowRightClickMenuCopyInformation(__id, "password"))
     __rootRightClickMenu.add_command(label=__translations("__rootRigthClickMenu", "url"), command=lambda : __rootShowRightClickMenuCopyInformation(__id, "url"))
     __rootRightClickMenu.add_command(label=__translations("__rootRigthClickMenu", "note"), command=lambda : __rootShowRightClickMenuCopyInformation(__id, "note"))
+    __rootRightClickMenu.add_separator()
+    __rootRightClickMenu.add_command(label=__translations("__rootRigthClickMenu", "modify"), command=lambda: __rootButtonModifyAccount(__customId=__id))
+    __rootRightClickMenu.add_command(label=__translations("__rootRigthClickMenu", "remove"), command=lambda : __rootButtonRemoveAccount(__customId=__id))
     __rootRightClickMenu.tk_popup(__event.x_root, __event.y_root, 0)
     __rootRightClickMenu.grab_release()
 
@@ -365,6 +412,7 @@ def __rootShowRightClickMenuCopyInformation(__id: int, __informationType: str):
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "username"), message=__translations("__rootRigthClickMenuInfoMessage", "username"))
     elif __informationType == "password":
         __root.clipboard_append(__accountsList[__id][3].get())
+        threading.Thread(target=lambda: __clearClipboard(30, __accountsList[__id][3].get())).start()
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "password"), message=__translations("__rootRigthClickMenuInfoMessage", "password"))
     elif __informationType == "url":
         __root.clipboard_append(__accountsList[__id][4].get())
@@ -374,7 +422,6 @@ def __rootShowRightClickMenuCopyInformation(__id: int, __informationType: str):
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "note"), message=__translations("__rootRigthClickMenuInfoMessage", "note"))
     else:
         raise ValueError(f"Error : Iccorect value for __informationType : '{__informationType}'")
-    threading.Thread(target=lambda : __clearClipboard(30)).start()
 
 def __translations(option1: str, option2: str = None):
     __lang: int | str = __language
@@ -388,6 +435,17 @@ def __translations(option1: str, option2: str = None):
             "message": {
                 "fr": "Le programme a rencontrer une erreur fatale et va donc s'arreter.",
                 "en": "The program has encountered a fatal error and will shutdown."
+            }
+        },
+        # Showerror if id is incorrect
+        "showerror_id_incorrect": {
+            "title": {
+                "fr": "Identifiant incorrect",
+                "en": "Incorrect ID"
+            },
+            "message": {
+                "fr": "L'identifiant que vous avez entré est incorrect.",
+                "en": "The username you entered is incorrect."
             }
         },
         # Root Window
@@ -478,6 +536,14 @@ def __translations(option1: str, option2: str = None):
             "note": {
                 "fr": "Copier la note",
                 "en": "Copy note"
+            },
+            "remove": {
+                "fr": "Supprimer le compte",
+                "en": "Remove account"
+            },
+            "modify": {
+                "fr": "Modifier le compte",
+                "en": "Modify account"
             }
         },
         "__rootRigthClickMenuInfoTitle": {
@@ -870,7 +936,7 @@ __FONT = "Arial"
 __FONT_SIZE = 16
 __FONT_STYLE = "bold"
 __LANGUAGES_AVAILAIBLE = ["fr", "en"]
-__DEFAULT_LANGUAGE = "fr"
+__DEFAULT_LANGUAGE = "en"
 __VERSION = "1.0.0.0"
 @lambda _ : _()
 def __LAST_DATABASE() -> str:
@@ -895,14 +961,15 @@ __showPassword.set(False)
 __activateTopMost = BooleanVar()
 __activateTopMost.set(False)
 __languageCheckMarks = [BooleanVar() for _ in range(len(__LANGUAGES_AVAILAIBLE))]
-__language = __DEFAULT_LANGUAGE
+__language = __getLanguage()
 __languageCheckMarks[__LANGUAGES_AVAILAIBLE.index(__language)].set(True)
 __stringVars: dict[str, StringVar] = {}
 __lastActions: list[list[str, int, list, int]] = []
+__lastWidth = __WIDTH
 __loadStringVars()
 # Root Window
 __root.geometry(f"{__WIDTH}x{__HEIGHT}")
-__root.resizable(False, False)
+__root.resizable(True, True)
 __root.iconbitmap(__ICON, __ICON)
 # Root page Right click menu
 __rootRightClickMenu = Menu(__root, tearoff=0)
@@ -965,6 +1032,7 @@ try:
             if __tempPassword is None:
                 raise PasswordError()
             __db = DataBase(__LAST_DATABASE, __tempPassword)
+            __root.bind("<Configure>", __updatedSizeChange)
             __updateListAccounts()
             __root.deiconify()
         except PasswordError:
