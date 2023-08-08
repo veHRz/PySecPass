@@ -6,19 +6,55 @@ from tkinter.filedialog import askopenfilename, asksaveasfilename
 from tkinter.simpledialog import askstring
 from tkinter.messagebox import showerror, showinfo, askyesnocancel
 from tkinter import *
+# Module for saving and loading the configuration
+from configparser import ConfigParser
 # Other modules
 import os, sys, time, threading, locale
 
 __db: DataBase
 __fileName: str
-__accountsList: list[list[Entry]] = []
-__accountsListTop: list[Entry] = []
+__accountsList: list[list[Text]] = []
+__accountsListTop: list[Text] = []
+__config: ConfigParser = ConfigParser()
+__DEFAULT_CONFIG_PATH = ".dbcache"
+__DEFAULT_CONFIG: dict[str, dict[str, ...]] = {
+    "OTHER": {
+        "database_path": ""
+    },
+    "ROOT": {
+        "geometry": "1080x720+200+200",
+        "width": "1080",
+        "width_indent": "200",
+        "heigth": "720",
+        "heigth_indent": "200"
+    },
+    "MENU_CHOICE": {
+        "geometry": "520x135+400+200",
+        "width": "520",
+        "width_indent": "720",
+        "heigth": "135",
+        "heigth_indent": "410"
+    }
+}
 
-def __saveAndQuit(_ = None) -> None:
+def __loadConfig(filename: str=__DEFAULT_CONFIG_PATH) -> None:
+    if not os.path.isfile(filename):
+        for __key, __value in __DEFAULT_CONFIG.items():
+            __config[__key] = __value
+        return
+    __config.read(filename)
+
+__loadConfig(filename=".dbcache")
+
+def __saveConfig(filename: str=__DEFAULT_CONFIG_PATH) -> None:
+    with open(filename, 'w') as __configFile:
+        __config.write(__configFile)
+
+def __saveAndQuit(_=None) -> None:
     __saveDataBase()
     __quit(0)
 
-def __askForSave(_ = None) -> None:
+def __askForSave(_=None) -> None:
     if __lastModifiedTime > __lastSavedTime:
         __answer = askyesnocancel(title=__translations("__askForSave", "title"), message=__translations("__askForSave", "message"), icon="warning")
         if __answer is None:
@@ -30,14 +66,13 @@ def __askForSave(_ = None) -> None:
 def __quit(code: int = -1) -> None:
     __root.destroy()
     __root.quit()
+    __saveConfig()
     sys.exit(code)
 
 def __saveDataBase() -> None:
     global __lastSavedTime
     __db.saveDatabase()
     __lastSavedTime = time.monotonic_ns()
-    with open(".dbcache", mode="w") as __file:
-        __file.write(__fileName)
 
 def __loadDataBase() -> bool:
     global __db, __fileName
@@ -47,6 +82,7 @@ def __loadDataBase() -> bool:
     __password = askstring(title=__translations("__loadDataBaseAskPassword", "title"), prompt=__translations("__loadDataBaseAskPassword", "message"), show="*", parent=__root)
     try:
         __db = DataBase(__fileName, __password)
+        __config["OTHER"]["database_path"] = __fileName
     except PasswordError:
         showerror(title=__translations("__loadDataBaseBadPassword", "title"), message=__translations("__loadDataBaseBadPassword", "message"))
         return False
@@ -68,7 +104,6 @@ def __loadNewDataBase() -> bool:
 
 def __updateListAccounts():
     global __accountsList
-    #__sizes = {0: 10, 1: 15, 2: 13, 3: 23, 4: 24}
     __length = __root.winfo_width()
     __sizes = {0: int(__length / 360), 1: int(__length / 74), 2: int(__length / 65), 3: int(__length / 60.5),4: int(__length / 58), 5: int(__length / 51)}
     for __x in __accountsList:
@@ -77,40 +112,71 @@ def __updateListAccounts():
                 __y.destroy()
     for account in __accountsListTop:
         account.destroy()
-    __accountsList = [[Entry() for _ in range(len(__sizes.keys())+1)] for _ in range(len(__db.currentAccounts))]
-    __accountsListTop.append(Entry(__rootFrame, width=__sizes[0], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListId"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsList = [[Text() for _ in range(len(__sizes.keys())+1)] for _ in range(len(__db.currentAccounts))]
+    __accountsListTop.append(Text(__rootFrame, width=__sizes[0], height=1, fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE)))
+    __accountsListTop[-1].tag_configure("center", justify='center')
+    __accountsListTop[-1].insert(END, __translations("__updateListId"))
+    __accountsListTop[-1].tag_add("center", 1.0, "end")
+    __accountsListTop[-1].config(state=DISABLED)
     __accountsListTop[-1].grid(row=0, column=0)
-    __accountsListTop.append(Entry(__rootFrame, width=__sizes[1], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListTitle"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop.append(Text(__rootFrame, width=__sizes[1], height=1, fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE)))
+    __accountsListTop[-1].tag_configure("center", justify='center')
+    __accountsListTop[-1].insert(END, __translations("__updateListTitle"))
+    __accountsListTop[-1].tag_add("center", 1.0, "end")
+    __accountsListTop[-1].config(state=DISABLED)
     __accountsListTop[-1].grid(row=0, column=1)
-    __accountsListTop.append(Entry(__rootFrame, width=__sizes[2], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListUser"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop.append(Text(__rootFrame, width=__sizes[2], height=1, fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE)))
+    __accountsListTop[-1].tag_configure("center", justify='center')
+    __accountsListTop[-1].insert(END, __translations("__updateListUser"))
+    __accountsListTop[-1].tag_add("center", 1.0, "end")
+    __accountsListTop[-1].config(state=DISABLED)
     __accountsListTop[-1].grid(row=0, column=2)
-    __accountsListTop.append(Entry(__rootFrame, width=__sizes[3], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListPassword"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop.append(Text(__rootFrame, width=__sizes[3], height=1, fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE)))
+    __accountsListTop[-1].tag_configure("center", justify='center')
+    __accountsListTop[-1].insert(END, __translations("__updateListPassword"))
+    __accountsListTop[-1].tag_add("center", 1.0, "end")
+    __accountsListTop[-1].config(state=DISABLED)
     __accountsListTop[-1].grid(row=0, column=3)
-    __accountsListTop.append(Entry(__rootFrame, width=__sizes[4], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListUrl"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop.append(Text(__rootFrame, width=__sizes[4], height=1, fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE)))
+    __accountsListTop[-1].tag_configure("center", justify='center')
+    __accountsListTop[-1].insert(END, __translations("__updateListUrl"))
+    __accountsListTop[-1].tag_add("center", 1.0, "end")
+    __accountsListTop[-1].config(state=DISABLED)
     __accountsListTop[-1].grid(row=0, column=4)
-    __accountsListTop.append(Entry(__rootFrame, width=__sizes[5], fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE), state=DISABLED, textvariable=__stringVars["__updateListNote"], disabledbackground="white", disabledforeground="black", justify=CENTER))
+    __accountsListTop.append(Text(__rootFrame, width=__sizes[5], height=1, fg="black", font=(__FONT, __FONT_SIZE, __FONT_STYLE)))
+    __accountsListTop[-1].tag_configure("center", justify='center')
+    __accountsListTop[-1].insert(END, __translations("__updateListNote"))
+    __accountsListTop[-1].tag_add("center", 1.0, "end")
+    __accountsListTop[-1].config(state=DISABLED)
     __accountsListTop[-1].grid(row=0, column=5)
     for __i in range(5):
         for __y in range(len(__db.currentAccounts)):
             __value = StringVar()
             __value.set(__db.currentAccounts[__y][__i])
+            __valueEntry = Text(__rootFrame, width=__sizes[__i + 1], height=1, fg="black", font=(__FONT, __FONT_SIZE))
             if __i == 2:
                 if __showPassword.get():
-                    __valueEntry = Entry(__rootFrame, width=__sizes[__i+1], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black")
+                    __valueEntry.insert(END, __db.currentAccounts[__y][__i])
                 else :
-                    __valueEntry = Entry(__rootFrame, width=__sizes[__i+1], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black", show="*")
+                    __valueEntry.insert(END, "".join(["*" for _ in range(len(__db.currentAccounts[__y][__i]))]))
             else:
-                __valueEntry = Entry(__rootFrame, width=__sizes[__i+1], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__value, disabledbackground="white", disabledforeground="black")
+                __valueEntry.tag_configure("center", justify='center')
+                __valueEntry.insert(END, __db.currentAccounts[__y][__i])
+                __valueEntry.tag_add("center", 1.0, "end")
+            __valueEntry.config(state=DISABLED)
             __accountsList[__y][__i+1] = __valueEntry
             __accountsList[__y][__i+1].bind("<Button-3>", __rootShowRightClickMenuLambda(__y))
             __accountsList[__y][__i+1].grid(row=__y+1, column=__i+1)
     for __i in range(len(__db.currentAccounts)):
-        __id = StringVar()
-        __id.set(str(__i))
-        __idEntry = Entry(__rootFrame, width=__sizes[0], fg="black", font=(__FONT, __FONT_SIZE), state=DISABLED, textvariable=__id, disabledbackground="white", disabledforeground="black", justify=CENTER)
+        __idEntry = Text(__rootFrame, width=__sizes[0], height=1, fg="black", font=(__FONT, __FONT_SIZE))
+        __idEntry.tag_configure("center", justify='center')
+        __idEntry.insert(END, str(__i))
+        __idEntry.tag_add("center", 1.0, "end")
+        __idEntry.config(state=DISABLED)
         __accountsList[__i][0] = __idEntry
         __accountsList[__i][0].bind("<Button-3>", __rootShowRightClickMenuLambda(__i))
         __accountsList[__i][0].grid(row=__i + 1, column=0)
+    __reloadTranslations()
 
 def __clearClipboard(seconds: int, content: str):
     time.sleep(seconds)
@@ -152,24 +218,17 @@ def __cancelLastAction(_ = None) -> None:
             __lastActions.pop()
     else:
         raise ValueError(f'Error : __last[0] value "{__last[0]}" is not valid.')
+    __updateListAccounts()
 
 def __getLanguage() -> str:
     __systemLanguage, _ = locale.getlocale()
     __systemLanguage = __systemLanguage[:2].lower()
-    if __systemLanguage in __LANGUAGES_AVAILAIBLE:
+    if __systemLanguage in __LANGUAGES_AVAILABLE:
         return __systemLanguage
     return __DEFAULT_LANGUAGE
 
 def __verifyIfIdExist(__id: int | str) -> bool:
     return int(__id) < len(__db.currentAccounts)
-
-def __updatedSizeChange(__event):
-    global __lastWidth
-    __currentWidth = __root.winfo_width()
-    if __currentWidth != __lastWidth:
-        __lastWidth = __currentWidth
-        __rootTopMenubuttons.config(width=__currentWidth)
-        __updateListAccounts()
 
 def __menuChoiceDBLoad() -> None:
     __result = __loadDataBase()
@@ -177,7 +236,7 @@ def __menuChoiceDBLoad() -> None:
         __menuChoiceDBRoot.withdraw()
         __updateListAccounts()
         __root.deiconify()
-        __root.bind("<Configure>", __updatedSizeChange)
+        __root.bind("<Configure>", __rootUpdates)
 
 def __menuChoiceDBNew() -> None:
     __result = __loadNewDataBase()
@@ -185,27 +244,26 @@ def __menuChoiceDBNew() -> None:
         __menuChoiceDBRoot.withdraw()
         __updateListAccounts()
         __root.deiconify()
-        __root.bind("<Configure>", __updatedSizeChange)
+        __root.bind("<Configure>", __rootUpdates)
 
-def __menuChoiceDB() -> None:
-    __menuChoiceDBWidth = "520"
-    __menuChoiceDBHeight = "135"
-    __menuChoiceDBRoot.geometry(f"{__menuChoiceDBWidth}x{__menuChoiceDBHeight}")
-    __menuChoiceDBRoot.resizable(False, False)
-    __menuChoiceDBRoot.iconbitmap(__ICON)
+def __menuChoiceDB(isInit: bool = False) -> None:
+    __menuChoiceDBRoot.geometry(__config["MENU_CHOICE"]["geometry"])
+    __menuChoiceDBRoot.resizable(True, True)
+    __menuChoiceDBRoot.iconbitmap(__ressource_path(__ICON))
     __menuChoiceDBRoot.protocol("WM_DELETE_WINDOW", __quit)
+    __menuChoiceDBRoot.bind("<Configure>", lambda _=None : __windowUpdates(__menuChoiceDBRoot, "MENU_CHOICE"))
     __menuChoiceDBRoot["bg"] = "white"
     # Top button to change language
-    __menuChoiceDBMenubuttons = Frame(__menuChoiceDBRoot, background="white", width=__WIDTH, height=25)
+    __menuChoiceDBMenubuttons = Frame(__menuChoiceDBRoot, background="white", width=__config["MENU_CHOICE"]["width"], height=25)
     __menuChoiceDBMenubuttons.pack(padx=0, pady=0, anchor="nw")
     __menuChoiceDBMenubuttons.pack_propagate(False)
     __menuChoiceDBTopMenubuttonLanguage = Menubutton(__menuChoiceDBRoot, bg="white", textvariable=__stringVars["__rootTopMenubuttonLanguageVar"])
     __menuChoiceDBTopMenubuttonLanguage.pack(in_=__menuChoiceDBMenubuttons, padx=5, side=LEFT)
     __menuChoiceDBTopMenuLanguage = Menu(__menuChoiceDBTopMenubuttonLanguage, tearoff=0)
-    __menuChoiceDBTopMenuLanguage.add_checkbutton(label="Français", command=lambda: __rootButtonLanguage("fr"), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILAIBLE.index("fr")])
-    __menuChoiceDBTopMenuLanguage.add_checkbutton(label="English", command=lambda: __rootButtonLanguage("en"), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILAIBLE.index("en")])
+    __menuChoiceDBTopMenuLanguage.add_checkbutton(label="Français", command=lambda: __rootButtonLanguage("fr", isInit), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILABLE.index("fr")])
+    __menuChoiceDBTopMenuLanguage.add_checkbutton(label="English", command=lambda: __rootButtonLanguage("en", isInit), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILABLE.index("en")])
     __menuChoiceDBTopMenubuttonLanguage.configure(menu=__menuChoiceDBTopMenuLanguage)
-    __menuChoiceDBLabel1 = Label(__menuChoiceDBRoot, font=(__FONT, __FONT_SIZE), wraplength=int(__menuChoiceDBWidth), background="white", textvariable=__stringVars["__menuChoiceDBLabel1Var"])
+    __menuChoiceDBLabel1 = Label(__menuChoiceDBRoot, font=(__FONT, __FONT_SIZE), wraplength=int(__config["MENU_CHOICE"]["width"]), background="white", textvariable=__stringVars["__menuChoiceDBLabel1Var"])
     __menuChoiceDBLabel1.pack(padx=0, pady=15)
     __menuChoiceDBBoutons = Frame(__menuChoiceDBRoot, background="white")
     __menuChoiceDBBoutons.pack(padx=5, pady=5)
@@ -214,6 +272,23 @@ def __menuChoiceDB() -> None:
     __menuChoiceDBBouton2 = Button(__menuChoiceDBBoutons, command=__menuChoiceDBNew, textvariable=__stringVars["__menuChoiceDBBouton2Var"])
     __menuChoiceDBBouton2.grid(padx=5, pady=5, column=1, row=0)
     __menuChoiceDBRoot.mainloop()
+
+def __rootUpdates(_=None):
+    global __lastWidth
+    __currentWidth = __root.winfo_width()
+    __windowUpdates(__root, "ROOT")
+    if __currentWidth != __lastWidth:
+        __lastWidth = __currentWidth
+        __rootTopMenubuttons.config(width=__currentWidth)
+        __updateListAccounts()
+
+def __windowUpdates(window: Toplevel | Tk, windowName: str):
+    windowName = windowName.upper()
+    __config[windowName]["geometry"] = str(window.geometry())
+    __config[windowName]["width"] = str(window.winfo_width())
+    __config[windowName]["width_indent"] = str(__root.winfo_x())
+    __config[windowName]["heigth"] = str(window.winfo_height())
+    __config[windowName]["heigth_indent"] = str(__root.winfo_y())
 
 def __rootButtonSaveDataBase(_ = None) -> None:
     __saveDataBase()
@@ -227,7 +302,11 @@ def __rootButtonLoadDataBase(_ = None) -> None:
 def __rootButtonChangePassword() -> bool:
     global __lastModifiedTime
     __oldPassword = askstring(title=__translations("__rootButtonChangePasswordOldPassword", "title"), prompt=__translations("__rootButtonChangePasswordOldPassword", "message"), show="*", parent=__root)
+    if __oldPassword is None:
+        return False
     __newPassword = askstring(title=__translations("__rootButtonChangePasswordNewPassword", "title"), prompt=__translations("__rootButtonChangePasswordNewPassword", "message"), show="*", parent=__root)
+    if __newPassword is None:
+        return False
     try:
         __db.changePassword(__oldPassword, __newPassword)
         __lastModifiedTime = time.monotonic_ns()
@@ -254,7 +333,7 @@ def __rootButtonAddAccount(_ = None, __customValues: list=None):
         return
     __buttonAccountRootAdd.deiconify()
     __buttonAccountRootAdd.geometry('300x135')
-    __buttonAccountRootAdd.iconbitmap(__ICON)
+    __buttonAccountRootAdd.iconbitmap(__ressource_path(__ICON))
     __buttonAccountRootAdd.protocol("WM_DELETE_WINDOW", __shutdown)
     __buttonAccountRootAdd.resizable(False, False)
     Label(__buttonAccountRootAdd, textvariable=__stringVars["__buttonAccountRootAddTitleVar"]).grid(row=0, column=0, sticky="w")
@@ -309,7 +388,7 @@ def __rootButtonModifyAccount(_ = None, __customValues: list=None, __customId: i
         return
     __buttonAccountRootModify.deiconify()
     __buttonAccountRootModify.geometry('375x160')
-    __buttonAccountRootModify.iconbitmap(__ICON)
+    __buttonAccountRootModify.iconbitmap(__ressource_path(__ICON))
     __buttonAccountRootModify.protocol("WM_DELETE_WINDOW", __shutdown)
     __buttonAccountRootModify.resizable(False, False)
     Label(__buttonAccountRootModify, textvariable=__stringVars["__buttonAccountRootModifyIdVar"]).grid(row=0, column=0, sticky="w")
@@ -362,7 +441,7 @@ def __rootButtonRemoveAccount(_ = None, __customRemove: list | None = None, __cu
         return
     __buttonAccountRootRemove.deiconify()
     __buttonAccountRootRemove.geometry('230x75')
-    __buttonAccountRootRemove.iconbitmap(__ICON)
+    __buttonAccountRootRemove.iconbitmap(__ressource_path(__ICON))
     __buttonAccountRootRemove.protocol("WM_DELETE_WINDOW", __shutdown)
     __buttonAccountRootRemove.resizable(False, False)
     Label(__buttonAccountRootRemove, textvariable=__stringVars["__buttonAccountRootRemoveIdVar"]).grid(row=1, column=0)
@@ -378,13 +457,15 @@ def __rootButtonRemoveAccount(_ = None, __customRemove: list | None = None, __cu
         __button.focus_set()
     __buttonAccountRootRemove.mainloop()
 
-def __rootButtonLanguage(language: str = "en"):
+def __rootButtonLanguage(language: str = "en", dontUpdateAccounts: bool = False):
     global __language
     __language = language
     for __bool in __languageCheckMarks:
         __bool.set(False)
-    __languageCheckMarks[__LANGUAGES_AVAILAIBLE.index(__language)].set(True)
+    __languageCheckMarks[__LANGUAGES_AVAILABLE.index(__language)].set(True)
     __reloadTranslations()
+    if not dontUpdateAccounts:
+        __updateListAccounts()
 
 def __rootShowRightClickMenuLambda(__id):
     return lambda __event : __rootShowRightClickMenu(int(__id), __event)
@@ -405,20 +486,20 @@ def __rootShowRightClickMenu(__id: int, __event):
 def __rootShowRightClickMenuCopyInformation(__id: int, __informationType: str):
     __root.clipboard_clear()
     if __informationType == "title":
-        __root.clipboard_append(__accountsList[__id][1].get())
+        __root.clipboard_append(__accountsList[__id][1].get("1.0",'end-1c'))
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "title"), message=__translations("__rootRigthClickMenuInfoMessage", "title"))
     elif __informationType == "username":
-        __root.clipboard_append(__accountsList[__id][2].get())
+        __root.clipboard_append(__accountsList[__id][2].get("1.0",'end-1c'))
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "username"), message=__translations("__rootRigthClickMenuInfoMessage", "username"))
     elif __informationType == "password":
-        __root.clipboard_append(__accountsList[__id][3].get())
-        threading.Thread(target=lambda: __clearClipboard(30, __accountsList[__id][3].get())).start()
+        __root.clipboard_append(__accountsList[__id][3].get("1.0",'end-1c'))
+        threading.Thread(target=lambda: __clearClipboard(30, __accountsList[__id][3].get("1.0",'end-1c'))).start()
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "password"), message=__translations("__rootRigthClickMenuInfoMessage", "password"))
     elif __informationType == "url":
-        __root.clipboard_append(__accountsList[__id][4].get())
+        __root.clipboard_append(__accountsList[__id][4].get("1.0",'end-1c'))
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "url"), message=__translations("__rootRigthClickMenuInfoMessage", "url"))
     elif __informationType == "note":
-        __root.clipboard_append(__accountsList[__id][5].get())
+        __root.clipboard_append(__accountsList[__id][5].get("1.0",'end-1c'))
         showinfo(title=__translations("__rootRigthClickMenuInfoTitle", "note"), message=__translations("__rootRigthClickMenuInfoMessage", "note"))
     else:
         raise ValueError(f"Error : Iccorect value for __informationType : '{__informationType}'")
@@ -512,8 +593,8 @@ def __translations(option1: str, option2: str = None):
             }
         },
         "__rootTopMenubuttonLanguageVar": {
-            "fr": "Change language",
-            "en": "Change language"
+            "fr": "Langue (Language)",
+            "en": "Language"
         },
         # Root Window Right Click Menu
         "__rootRigthClickMenu": {
@@ -834,7 +915,10 @@ def __reloadTranslations():
     # Top menu File button
     __stringVars["__rootTopMenubuttonFileVar"].set(__translations("__rootTopMenubuttonFileVar"))
     __rootTopMenuFile.delete(0, "end")
-    __rootTopMenuFile.add_command(label=__translations("__rootTopMenuFile", "cancel"), command=__cancelLastAction)
+    if len(__lastActions) == 0:
+        __rootTopMenuFile.add_command(label=__translations("__rootTopMenuFile", "cancel"), command=__cancelLastAction, state=DISABLED)
+    else:
+        __rootTopMenuFile.add_command(label=__translations("__rootTopMenuFile", "cancel"), command=__cancelLastAction)
     __rootTopMenuFile.add_separator()
     __rootTopMenuFile.add_command(label=__translations("__rootTopMenuFile", "save"), command=__rootButtonSaveDataBase)
     __rootTopMenuFile.add_command(label=__translations("__rootTopMenuFile", "load"), command=__rootButtonLoadDataBase)
@@ -882,13 +966,6 @@ def __reloadTranslations():
     __stringVars["__menuChoiceDBLabel1Var"].set(__translations("__menuChoiceDBLabel1Var"))
     __stringVars["__menuChoiceDBBouton1Var"].set(__translations("__menuChoiceDBBouton1Var"))
     __stringVars["__menuChoiceDBBouton2Var"].set(__translations("__menuChoiceDBBouton2Var"))
-    # Update List
-    __stringVars["__updateListId"].set(__translations("__updateListId"))
-    __stringVars["__updateListTitle"].set(__translations("__updateListTitle"))
-    __stringVars["__updateListUser"] .set(__translations("__updateListUser"))
-    __stringVars["__updateListPassword"].set(__translations("__updateListPassword"))
-    __stringVars["__updateListUrl"].set(__translations("__updateListUrl"))
-    __stringVars["__updateListNote"].set(__translations("__updateListNote"))
 
 def __loadStringVars():
     # Root page
@@ -927,58 +1004,45 @@ def __loadStringVars():
     __stringVars["__updateListUrl"] = StringVar()
     __stringVars["__updateListNote"] = StringVar()
 
+def __ressource_path(__relative_path):
+    __base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(__base_path, __relative_path)
+
 __root = Tk()
-__WIDTH = "1080"
-__HEIGHT = "720"
 __ICON = "PySecPassIcon.ico"
 __ICON_PNG = "PySecPassIcon.png"
 __FONT = "Arial"
 __FONT_SIZE = 16
 __FONT_STYLE = "bold"
-__LANGUAGES_AVAILAIBLE = ["fr", "en"]
+__LANGUAGES_AVAILABLE = ["fr", "en"]
 __DEFAULT_LANGUAGE = "en"
-__VERSION = "1.0.0.0"
-@lambda _ : _()
-def __LAST_DATABASE() -> str:
-    global __fileName
-    try:
-        with open(".dbcache", mode="r") as __file:
-            __fileContent = __file.readlines()
-            if len(__fileContent) != 1:
-                raise ValueError()
-            with open(__fileContent[0], mode="r"):
-                pass
-            __fileName = __fileContent[0]
-            return __fileContent[0]
-    except FileNotFoundError:
-        return ""
-    except ValueError:
-        return ""
+__VERSION = "1.1.3.6"
+__LAST_DATABASE: str = __config["OTHER"]["database_path"]
 __lastModifiedTime = 0
 __lastSavedTime = 0
 __showPassword = BooleanVar()
 __showPassword.set(False)
 __activateTopMost = BooleanVar()
 __activateTopMost.set(False)
-__languageCheckMarks = [BooleanVar() for _ in range(len(__LANGUAGES_AVAILAIBLE))]
+__languageCheckMarks = [BooleanVar() for _ in range(len(__LANGUAGES_AVAILABLE))]
 __language = __getLanguage()
-__languageCheckMarks[__LANGUAGES_AVAILAIBLE.index(__language)].set(True)
+__languageCheckMarks[__LANGUAGES_AVAILABLE.index(__language)].set(True)
 __stringVars: dict[str, StringVar] = {}
 __lastActions: list[list[str, int, list, int]] = []
-__lastWidth = __WIDTH
+__lastWidth = __config["ROOT"]["width"]
 __loadStringVars()
 # Root Window
-__root.geometry(f"{__WIDTH}x{__HEIGHT}")
+__root.geometry(__config["ROOT"]["geometry"])
 __root.resizable(True, True)
-__root.iconbitmap(__ICON, __ICON)
+__root.iconbitmap(__ressource_path(__ICON), __ressource_path(__ICON))
 # Root page Right click menu
 __rootRightClickMenu = Menu(__root, tearoff=0)
-#__root.iconphoto(True, PhotoImage(file=sys.executable))
-__root.iconphoto(True, PhotoImage(file=__ICON_PNG), PhotoImage(file=__ICON_PNG))
+# __root.iconphoto(True, PhotoImage(file=sys.executable))
+__root.iconphoto(True, PhotoImage(file=__ressource_path(__ICON_PNG)), PhotoImage(file=__ressource_path(__ICON_PNG)))
 __root.protocol("WM_DELETE_WINDOW", __askForSave)
 __root.config()
 # Top menu buttons:
-__rootTopMenubuttons = Frame(__root, background="white", width=__WIDTH, height=25)
+__rootTopMenubuttons = Frame(__root, background="white", width=__config["ROOT"]["width"], height=25)
 __rootTopMenubuttons.pack(padx=0, pady=0, anchor="nw")
 __rootTopMenubuttons.pack_propagate(False)
 # Top menu File button
@@ -997,8 +1061,8 @@ __rootTopMenuAccount = Menu(__rootTopMenubuttonAccount, tearoff=0)
 __rootTopMenubuttonLanguage = Menubutton(__root, bg="white", textvariable=__stringVars["__rootTopMenubuttonLanguageVar"])
 __rootTopMenubuttonLanguage.pack(in_=__rootTopMenubuttons, padx=5, side=LEFT)
 __rootTopMenuLanguage = Menu(__rootTopMenubuttonLanguage, tearoff=0)
-__rootTopMenuLanguage.add_checkbutton(label="Français", command=lambda : __rootButtonLanguage("fr"), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILAIBLE.index("fr")])
-__rootTopMenuLanguage.add_checkbutton(label="English", command=lambda : __rootButtonLanguage("en"), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILAIBLE.index("en")])
+__rootTopMenuLanguage.add_checkbutton(label="Français", command=lambda : __rootButtonLanguage("fr"), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILABLE.index("fr")])
+__rootTopMenuLanguage.add_checkbutton(label="English", command=lambda : __rootButtonLanguage("en"), onvalue=True, offvalue=False, variable=__languageCheckMarks[__LANGUAGES_AVAILABLE.index("en")])
 __rootTopMenubuttonLanguage.configure(menu=__rootTopMenuLanguage)
 # Keyboard shortcuts
 __root.bind("<Control-s>", __rootButtonSaveDataBase)
@@ -1023,18 +1087,20 @@ try:
     __buttonAccountRootModify.withdraw()
     __reloadTranslations()
     if __LAST_DATABASE == "":
-        __menuChoiceDB()
+        __menuChoiceDB(isInit=True)
     else:
         __menuChoiceDBRoot.withdraw()
         __tempPassword = askstring(title=__translations("__loadDataBaseAskPassword", "title"), prompt=__translations("__loadDataBaseAskPassword", "message"), show="*", parent=__root)
         __LAST_DATABASE: str = str(__LAST_DATABASE)
         try:
             if __tempPassword is None:
-                raise PasswordError()
-            __db = DataBase(__LAST_DATABASE, __tempPassword)
-            __root.bind("<Configure>", __updatedSizeChange)
-            __updateListAccounts()
-            __root.deiconify()
+                __menuChoiceDBRoot.deiconify()
+                __menuChoiceDB(isInit=True)
+            else:
+                __db = DataBase(__LAST_DATABASE, __tempPassword)
+                __root.bind("<Configure>", __rootUpdates)
+                __updateListAccounts()
+                __root.deiconify()
         except PasswordError:
             showerror(title=__translations("__loadDataBaseBadPassword", "title"), message=__translations("__loadDataBaseBadPassword", "message"))
             __menuChoiceDBRoot.deiconify()

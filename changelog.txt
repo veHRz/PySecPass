@@ -1,4 +1,27 @@
 ====================================================================
+Version : 1.1.3.6
+Change:
+    - New rules for version changes:
+        - + 1.0.0.0 : Added big changes
+        - + 0.1.0.0 : For every 10 new changes
+        - + 0.0.1.0 : For each new change or for each 10 bugs fixed
+        - + 0.0.0.1 : For each bug solved
+    - You can now copy cell text without right-clicking.
+    - The configuration file has been changed to be more readable
+    and useful.
+Bug solved:
+    - The button to undo the last action is now grayed out when
+      there were no new actions.
+    - The text of the button to change the language has been
+      modified to always be in english.
+    - The "Cancel" button works in the windows to change the
+      Database password.
+    - Fixed a bug where you couldn't change the language when
+      entering the password the first time.
+    - The main window now keeps its position each time you open it.
+    - The window to choose between opening or creating a new
+      database now keeps its position each time you open it.
+====================================================================
 Version : 1.1.0.0
 Change:
     - The clipboard now clears automatically only if the content
